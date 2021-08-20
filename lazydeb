@@ -2,7 +2,7 @@
 # https://stackoverflow.com/a/246128
 DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 LIB="$DIR/lib/bash"
-URL="git@gitlab.com:tspub"
+URL="git@gitlab.com:tslight"
 ANSIBLE="$HOME/devops/ansible"
 CODENAME="$(lsb_release -cs)"
 ANSIBLE_PPA="http://ppa.launchpad.net/ansible/ansible/ubuntu $CODENAME main"

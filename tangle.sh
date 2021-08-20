@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-ETC="${HOME}/src/tspub/devops/etc"
+ETC="${HOME}/src/gitlab/tslight/etc"
 
 usage() {
     echo "
@@ -30,24 +30,24 @@ tangle_dir () {
     [[ "$dir" =~ .*emacs.* ]] && { refresh_packages; tangle_tangles; }
 
     emacs -Q --batch -l ~/.emacs.d/site-lisp/my-tangles.el\
-	  --eval '(my/tangle-directory "'$dir'")'
+          --eval '(my/tangle-directory "'$dir'")'
 }
 
 main () {
     if [[ -z "$1" ]]; then
-	tangle_all
+        tangle_all
     else
-	case "$1" in
-	    -a|--all)
-		tangle_all
-		;;
-	    -h|--help)
-		usage
-		;;
-	    *)
-		tangle_dir "$1"
-		;;
-	esac
+        case "$1" in
+            -a|--all)
+                tangle_all
+                ;;
+            -h|--help)
+                usage
+                ;;
+            *)
+                tangle_dir "$1"
+                ;;
+        esac
     fi
 }
 
