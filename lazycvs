@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+URL="anoncvs@anoncvs.spacehopper.org:/cvs"
+TAG="OPENBSD_6_3"
+USER=$(whoami)
+SRC=/usr
+WWW=/var/www/htdocs
+
+src="$SRC/src"
+obj="$SRC/obj"
+xenocara="$SRC/xenocara"
+xobj="$SRC/xobj"
+ports="$SRC/ports"
+pobj="$SRC/pobj"
+www="$WWW/openbsd.org"
+
+DIRS=("$src" "$obj" "$xenocara" "$xobj" "$ports" "$pobj" "$www")
+
+sudo usermod -G wobj,wsrc "$USER"
+
+for dir in "${DIRS[@]}"; do
+    [ -d "$dir" ] || sudo mkdir -p "$dir"
+    if [[ -z $(ls -A "$dir") ]]; then
+	if [[ "$dir" =~ obj ]]; then
+	    sudo chown -R build:wobj "$dir"
+	else
+	    sudo chown -R root:wsrc "$dir"
+	    sudo chmod 775 "$dir"
+	    dir=$(basename "$dir")
+	    if [[ "$dir" == "openbsd.org" ]]; then
+		cd "$WWW"
+		cvs -d "$URL" co -d "$dir" -P www
+	    else
+		cd "$SRC"
+		cvs -d "$URL" co -r"$TAG" -P "$dir"
+	    fi
+	fi
+    else
+	cd "$dir"
+	cvs -q up -Pd -r"$TAG"
+    fi
+done

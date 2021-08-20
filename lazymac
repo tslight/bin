@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+
+BREWURL="https://raw.githubusercontent.com/Homebrew/install/master/install"
+# https://stackoverflow.com/a/246128
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+LIB="$DIR/lib/bash"
+PKGDIR="$DIR/pkgs"
+
+source "$LIB/ask"
+source "$LIB/colors"
+source "$PKGDIR/brews"
+
+usage () {
+    echo "
+$(basename "$0") [-a] [-b] [-c] [-l] [-p] [-y]
+
+BREW BOOTSTRAPPING AND OTHER RANDOM SETUP JUNK
+----------------------------------------------
+
+-a : Carry out all tasks.
+-b : Install Homebrew if not already installed.
+-c : Install selection of casks.
+-h : Show this help page and exit.
+-l : Install lazyinit script.
+-p : Install selection of brew packages.
+-y : Automate install of casks and packages.
+"
+}
+
+get_brew () {
+    if command -v brew &> /dev/null; then
+	echo "${GREEN}Homebrew already installed :-)${NC}"
+	return 0
+    else
+	echo "${YELLOW}Installing Homebrew...${NC}"
+	if ruby -e "$(curl -fsSL $BREWURL)"; then
+	    echo "${CYAN}Successfully installed Homebrew :-)${NC}"
+	    return 0
+	else
+	    echo "${RED}Failed to install Homebrew.${NC}"
+	    return 1
+	fi
+    fi
+}
+
+update_brew() {
+    brew update && \
+	brew upgrade && \
+	brew cask upgrade
+}
+
+get_askcasks () {
+    for ask_cask in "${ASK_CASKS[@]}"; do
+	if brew cask ls "$ask_cask"; then
+	    echo "${GREEN}$ask_cask already installed :-)"
+	else
+	    ask "${MAGENTA}Would you like to install $ask_cask?${NC}" && \
+		brew cask install "$ask_cask"
+	fi
+    done
+}
+
+menu () {
+    local err="$1"
+
+    echo
+    if [[ ! -z "$err" ]]; then
+	echo "$err"
+	echo
+    fi
+    echo "${MAGENTA}Choose from options below:${NC}"
+    echo
+    echo "${YELLOW}[a]${GREEN}ll      : Carry out all functions.${NC}"
+    echo "${YELLOW}[b]${GREEN}rew     : Install Homebrew. ${NC}"
+    echo "${YELLOW}[c]${GREEN}asks    : Install Homebrew casks.${NC}"
+    echo "${YELLOW}[p]${GREEN}ackages : Install Homebrew packages.${NC}"
+    echo "${YELLOW}[u]${GREEN}update  : Update Homebrew packages.${NC}"
+    echo "${YELLOW}[q]${GREEN}uit     : Exit this menu and forget this ever happened..${NC}"
+    echo
+}
+
+get_opts () {
+    local str="$1"
+
+    clear
+
+    [[ ! -z "$str" ]] && menu "$str" || menu
+
+    while :; do
+	read -rep "${MAGENTA}---> ${NC}" ans
+	case "$ans" in
+	    a)
+		clear
+		get_brew
+		update_brew
+		brew install "${BREWS[@]}"
+		brew install "${CASKS[@]}"
+		get_askcasks
+		brew cleanup -s
+		get_opts
+		;;
+	    b)
+		clear
+		if get_brew; then
+		    get_opts "${CYAN}Brew installed :-)${NC}"
+		else
+		    get_opts "${RED}Brew failed to install :-(${NC}"
+		fi
+		;;
+	    c)
+		clear
+		update_brew
+		brew install "${CASKS[@]}"
+		get_askcasks
+		brew cleanup -s
+		get_opts
+		;;
+	    p)
+		clear
+		update_brew
+		brew install "${BREWS[@]}"
+		brew cleanup -s
+		get_opts
+		;;
+	    u)
+		clear
+		update_brew
+		;;
+	    q)
+		clear
+		exit
+		;;
+	    *)
+		clear
+		menu "Pick a bracketed letter numbnuts."
+	esac
+    done
+}
+
+
+main () {
+    [[ -z "$1" ]] && get_opts "${RED}No argument given :-(${NC}" ||\
+	    while getopts "abchlp" opts; do
+		case "$opts" in
+		    a)
+			get_brew
+			update_brew
+			brew install "${BREWS[@]}"
+			brew install "${CASKS[@]}"
+			get_askcasks
+			brew cleanup -s
+			;;
+		    b)
+			get_brew
+			;;
+		    c)
+			brew install "${CASKS[@]}"
+			get_askcasks
+			brew cleanup -s
+			;;
+		    h)
+			usage
+			exit 1
+			;;
+		    p)
+			brew install "${BREWS[@]}"
+			brew cleanup -s
+			;;
+		    u)
+			clear
+			update_brew
+			;;
+		    \?)
+			usage
+			exit 1
+			;;
+		esac
+	    done
+}
+
+main "$@"

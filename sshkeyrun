@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+
+readonly NC=$(tput sgr0)
+readonly BOLD=$(tput bold)
+readonly BLACK=$(tput setaf 0)
+readonly RED=$(tput setaf 1)
+readonly GREEN=$(tput setaf 2)
+readonly YELLOW=$(tput setaf 3)
+readonly BLUE=$(tput setaf 4)
+readonly MAGENTA=$(tput setaf 5)
+readonly CYAN=$(tput setaf 6)
+readonly WHITE=$(tput setaf 7)
+
+usage () {
+    echo "
+$(basename "$0") [REMOTE_USER]@[REMOTE_HOST] [COMMAND]
+
+This script takes a user name, hostname or IP address and an optional command as
+arguments. If none are entered it will prompt for them.
+
+If just a user name and hostname are provided it will just check and setup ssh
+public key authentication. If just a hostname is given it will use your current
+user name as the user name.
+
+If all 3 arguments are given it checks for a valid ssh public key authentication
+configuration, and if one is not found it sets one up, and then uses it to run
+the command provided.
+"
+}
+
+get_args () {
+    read -rep "Enter Remote User Name: " REMOTE_USER
+    read -rep "Enter Remote Hostname or IP: " REMOTE_HOST
+    read -rep "Enter Command to Execute on Remote Host: " COMMAND
+}
+
+check_args () {
+    case "$#" in
+	0)
+	    get_args
+	    ;;
+	1)
+	    if [[ "$1" =~ .*@.* ]]; then
+		REMOTE_USER="${1%@*}"
+		REMOTE_HOST="${1##*@}"
+	    else
+		REMOTE_USER="$(whoami)"
+		REMOTE_HOST="$1"
+	    fi
+	    ;;
+	2)
+	    if [[ "$1" =~ .*@.* ]]; then
+		REMOTE_USER="${1%@*}"
+		REMOTE_HOST="${1##*@}"
+		COMMAND="$2"
+	    elif host "$1" 2>&1 >/dev/null; then
+		REMOTE_USER="$(whoami)"
+		REMOTE_HOST="$1"
+		COMMAND="$2"
+	    else
+		REMOTE_USER="$1"
+		REMOTE_HOST="$2"
+	    fi
+	    ;;
+	3)
+	    REMOTE_USER="$1"
+	    REMOTE_HOST="$2"
+	    COMMAND="$3"
+	    ;;
+	*)
+	    usage
+	    exit 1
+	    ;;
+    esac
+}
+
+run_command () {
+    echo "${BLUE}Running $COMMAND as $REMOTE_USER on $REMOTE_HOST...${NC}"
+    ssh "$REMOTE_USER"@"$REMOTE_HOST" "$COMMAND"
+}
+
+copy_keys () {
+    echo "${BLUE}Copying Public key to $REMOTE_USER@$REMOTE_HOST...${NC}"
+    echo
+    if ssh-copy-id "$REMOTE_USER"@"$REMOTE_HOST"; then
+	echo "${GREEN}Public key sucessfully copied to $REMOTE_USER@$REMOTE_HOST.${NC}"
+	return 0
+    else
+	echo
+	echo "${RED}Copying SSH keys failed.${NC}"
+	exit 1
+    fi
+}
+
+generate_keys () {
+    echo "${BLUE}Generating SSH keys...${NC}"
+    echo
+    if ssh-keygen; then
+	echo
+	echo "${GREEN}SSH keys sucessfully generated.${NC}"
+	copy_keys
+	return 0
+    else
+	echo
+	echo "${RED}SSH key generation failed.${NC}"
+	exit 1
+    fi
+}
+
+check_auth () {
+    echo "${BLUE}Testing authentication...${NC}"
+    if ssh -o BatchMode=yes "$REMOTE_USER@$REMOTE_HOST" 'exit' &> /dev/null; then
+	echo "${GREEN}Automated authentication succeeded.${NC}"
+	return 0
+    else
+	echo "${MAGENTA}Automated authentication failed.${NC}"
+	return 1
+    fi
+}
+
+check_agent () {
+    echo "${BLUE}Checking agent...${NC}"
+    if [ ! -S ~/.ssh/ssh_auth_sock ]; then
+	echo "${MAGENTA}Agent not authenticated.${NC}"
+	echo "${BLUE}Authenticating...${NC}"
+	eval $(ssh-agent) &> /dev/null
+	ln -sf "$SSH_AUTH_SOCK" ~/.ssh/ssh_auth_sock
+    else
+	echo "${GREEN}Agent authenticated.${NC}"
+    fi
+    export SSH_AUTH_SOCK=~/.ssh/ssh_auth_sock
+    ssh-add -l &> /dev/null || ssh-add
+}
+
+check_keys () {
+    echo "${BLUE}Checking keys...${NC}"
+    if [ -f $HOME/.ssh/*.pub ]; then
+	echo "${GREEN}Found public key.${NC}"
+	check_agent
+	if check_auth; then
+	    if [ -z "$COMMAND" ]; then
+		exit 0
+	    else
+		run_command && exit 0 || exit 1
+	    fi
+	else
+	    copy_keys
+	    check_keys
+	fi
+    else
+	echo "${MAGENTA}No public key found.${NC}"
+	generate_keys
+	check_keys
+    fi
+}
+
+check_args "$@"
+check_keys

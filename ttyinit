@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+LIB="$DIR/lib/bash"
+source "$LIB/colors"
+
+show_menu() {
+    local error="$1"
+
+    echo "${MAGENTA}Choose a session:${NC}"
+    echo "${BLUE}--> (${YELLOW}c${BLUE})${CYAN}wn"
+    echo "${BLUE}--> (${YELLOW}e${BLUE})${CYAN}macs"
+    echo "${BLUE}--> (${YELLOW}j${BLUE})${CYAN}wn"
+    echo "${BLUE}--> (${YELLOW}k${BLUE})${CYAN}de-xorg"
+    echo "${BLUE}--> (${YELLOW}p${BLUE})${CYAN}lasma-wayland"
+    echo "${BLUE}--> (${YELLOW}o${BLUE})${CYAN}penbox"
+    echo "${BLUE}--> (${YELLOW}r${BLUE})${CYAN}atpoison"
+    echo "${BLUE}--> (${YELLOW}s${BLUE})${CYAN}tumpwm"
+    echo "${BLUE}--> (${YELLOW}t${BLUE})${CYAN}mux"
+    echo "${BLUE}--> (${YELLOW}x${BLUE})${CYAN}fce"
+    echo "${BLUE}--> (${YELLOW}q${BLUE})${CYAN}uit"
+    [[ -n "$error" ]] && echo "${RED}$error${NC}"
+    read -n 1 -rep "${BLUE}--> ${NC}" opt # -n 2 option means no carriage return necessary
+}
+
+chkstartx() {
+    local cmd="$1"
+
+    path="$(command -v "$cmd")"
+
+    if [ -n "$path" ]; then
+        startx "$path"
+        return 0
+    else
+        return 1
+    fi
+}
+
+ttyinit() {
+    local error=""
+    until [[ $opt == [qQ] ]]; do  # keep asking until q
+        clear
+        show_menu "$error"
+        case $opt in
+            c|C) chkstartx cwm  && break || error="cwm not found. Pick another option."
+                 ;;
+            e|E) emacsclient --tty --create-frame -a "" && break || \
+                           error="emacs not found. Pick another option."
+                 ;;
+            f|F) chkstartx fvwm && break || error="fvwm not found. Pick another option."
+                 ;;
+            j|J) chkstartx jwm && break || error="jwm not found. Pick another option."
+                 ;;
+            k|K) startkde && break || error="kde not found. Pick another option."
+                 ;;
+            p|P) startplasma-wayland && break || error="plasma-wayland not found. Pick another option."
+                 ;;
+            o|O) chkstartx openbox-session && break || error="openbox not found. Pick another option."
+                 ;;
+            r|R) chkstartx ratpoison && break || error="ratpoison not found. Pick another option."
+                 ;;
+            s|S) startx "$(sbcl --eval '(require :stumpwm)' --eval '(stumpwm:stumpwm)')" &&  \
+                       break || error="stumpwm not found. Pick another option."
+                 ;;
+            t|T) command -v tmux || error="tmux not installed. Pick another option."
+                 tmux -q has-session && tmux attach -d || tmux -u
+                 break
+                 ;;
+            x|X) chkstartx startxfce4 && break || error="xfce4 not found. Pick another option."
+                 ;;
+            *)
+                error="$opt is invalid (enter a yellow letter)."
+                ;;
+        esac
+    done
+    logout
+}
+
+ttyinit

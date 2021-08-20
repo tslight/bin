@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+#  The "greatest common divisor" (gcd) of two integers is the largest integer
+#  that will divide both, leaving no remainder.
+
+#  Euclid's algorithm uses successive division. In each pass:
+#      dividend <---  divisor
+#      divisor  <---  remainder, until remainder = 0.
+#  The greatest common divisor = dividend, on the final pass.
+
+#  For an excellent discussion of Euclid's algorithm, see
+#  Jim Loy's site, http://www.jimloy.com/number/euclids.htm.
+SCRIPT=$(basename "$0")
+
+usage () {
+    printf "\\nUsage: %s [INTEGER] [INTEGER]\\n\\n" "$SCRIPT"
+}
+
+check_int () {
+    if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+	printf "\\n%s is not an integer.\\n" "$1"
+	usage
+	exit 1
+    fi
+}
+
+check_args () {
+    if [[ "$#" -ne 2 ]]; then
+	usage
+	exit 1
+    else
+	for i in "$@"; do
+	    check_int "$i"
+	done
+    fi
+}
+
+euclid () {
+    # It doesn't matter which of the two is larger. Why not?
+    local -i dividend="$1" divisor="$2" remainder=1
+
+    until [ "$remainder" -eq 0 ]; do
+	remainder=$((dividend%divisor))
+	dividend=$divisor # Now repeat with 2 smallest numbers.
+	divisor=$remainder
+    done
+
+    printf "\\nThe GCD of %i and %i = %i\\n\\n" "$1" "$2" "$dividend"
+}
+
+check_args "$@"
+euclid "$1" "$2"
+exit 0

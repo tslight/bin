@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+[ -z "$1" ] && DISKTYPE="internal" || DISKTYPE="$1" # default to internal
+[ -z "$2" ] && echo "Please enter a passphrase." && exit 1 || PASS="$2"
+
+# create an array of the relevant disktype. we pipe the output to
+# awk to get the right column and then to grep to only get the
+# rows with the device paths present.
+DISKARRAY=$(diskutil list "$DISKTYPE" | awk '{print $1}' | grep "/dev/");
+
+unlock () {
+    for i in "${DISKARRAY[@]}"; do
+	if diskutil list "$i" | grep "CoreStorage"; then
+	    echo "CoreStorage volume found on $i"
+	    if diskutil cs list | grep -q "Locked"; then
+		echo "Locked volume found on $i";
+		echo "Unlocking $i....";
+		# find the UUID of the locked device as we need
+		# this to unlock it. Grep for the volume, the -v
+		# flag egrep uses excludes results with Group or
+		# Family, and the awk pipe only prints the column
+		# with the UUID in it.
+		UUID=$(diskutil cs list | grep "Logical Volume" | egrep -v "Group|Family" | awk '{print $4}');
+		# use the uuid variable set above and the
+		# function's second argument - a valid passphrase
+		# - to unlock the disk.
+		diskutil cs unlockVolume $UUID -passphrase $1;
+		[ $? -eq 0 ] && echo "Successfully unlocked $i" || echo "Failed to unlock $i"
+	    else
+		echo "No Locked volumes found on $i"
+	    fi
+	else
+	    echo "No CoreStorage volumes found on $i"
+	fi
+    done
+}
+
+unlock "$PASS"

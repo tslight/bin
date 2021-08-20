@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+choose() {
+    local banner="$1" prompt="$2"; shift 2; local options=("$@")
+    local cr=$(echo $'\n.')
+    cr=${cr%.}
+
+    PS3="${cr}${prompt}: "
+    echo
+    echo "$banner"
+    echo
+
+    select option in "${options[@]}"; do
+	if [[ "$REPLY" =~ ^[1-9]|[1-9][0-9]+$ &&\
+		  "$REPLY" -le "${#options[@]}" ]]; then
+	    echo
+	    echo "You picked $option ($REPLY)"
+	    echo
+	    break
+	else
+	    echo
+	    echo "$REPLY is invalid."
+	    continue
+	fi
+    done
+}
+
+choose "$@"

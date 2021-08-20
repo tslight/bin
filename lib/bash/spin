@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# provide user feedback for long running commands.
+spinner () {
+    local spin pid="$1" str="$2"
+    trap 'kill $pid 2> /dev/null' EXIT
+    spin='-\|/'
+    i=0
+    while ps -p "$pid" &> /dev/null; do
+	local -i i=$(( (i+1) %4 ))
+	printf "\\r%s ${spin:$i:1} " "$str"
+	sleep .1
+    done
+    # 79 expansions of the space character to blank last line to standard terminal widths
+    printf "\\r"; printf " %0.s" {0..100}; printf "\\n"
+    trap - EXIT
+}

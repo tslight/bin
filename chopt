@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+usage () {
+    echo "
+$(basename "$0") [BANNER] [PROMPT] [OPTIONS]
+
+Create a numbered option menu from a list of options.
+
+The first argument will be used as a banner/title.
+The second argument will be used as a prompt.
+The rest of the arguments will become the numbered options.
+
+The option next to the number entered at the prompt will be echoed to the
+screen, or can be used to set a variable in another script.
+"
+}
+
+show_menu () {
+    local banner="$1"; shift 1; local options=("$@")
+
+    clear >&2
+    echo >&2
+    echo "$banner" >&2
+    echo >&2
+    for i in "${!options[@]}"; do
+	printf "%3d) %s\n" $((i+1)) "${options[i]}" >&2
+    done
+    echo >&2
+}
+
+get_selection() {
+    local banner="$1"; local prompt="$2"; shift 2; local options=("$@")
+    local optcount="${#options[@]}"
+    local optstr="(1-${optcount}): "
+    local msg="$prompt $optstr"
+    local cr=$(echo $'\n.')
+
+    cr=${cr%.}
+
+    while :; do
+	show_menu "$banner" "${options[@]}"
+	read -rep "$msg" input
+	if [[ "$input" =~ ^[1-9] && "$input" -le "$optcount" ]]; then
+	    index=$((input-1))
+	    selection="${options[$index]}"
+	    break
+	elif [[ "$input" =~ ^[qQ]$ ]]; then
+	    echo >&2
+	    echo "Goodbye!" >&2
+	    echo >&2
+	    exit 0
+	else
+	    msg="$input is invalid!${cr}${cr}$prompt $optstr"
+	fi
+    done
+
+    echo "$selection"
+}
+
+chopt() {
+    if [[ "$#" -gt 0 ]]; then
+	selected=$(get_selection "$@")
+	clear >&2
+	echo "$selected"
+    else
+	usage
+    fi
+}
+
+chopt "$@"

@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+NTP_SERVERS=(
+    mcsaatchi.pri
+    time.apple.com
+)
+
+usage() {
+    echo "
+$(basename "$0") [TIMEZONE]
+
+This script needs to be given a valid timezone as an argument.
+
+Run 'systemsetup listtimezones' for a list of valid timezones.
+"
+}
+
+check_root() {
+    if [[ "$(id -u)" -ne 0 ]]; then
+	echo
+	echo "THIS SCRIPT MUST BE RUN AS ROOT!"
+	usage
+	exit 1
+    fi
+}
+
+check_timezone() {
+    local timezone="$1"
+
+    if ! systemsetup listtimezones | grep -q "$timezone"; then
+	echo
+	echo "INVALID TIMEZONE ($timezone)!"
+	usage
+	exit 1
+    fi
+}
+
+set_default_timezone() {
+    local timezone="$1"
+
+    if systemsetup -settimezone "$timezone"; then
+	echo "Successfully set default timezone to $timezone"
+    else
+	echo "Failed to set default timezone to $timzone"
+    fi
+}
+
+add_all_ntpservers() {
+    local ntp_conf="/etc/ntp.conf"
+
+    # add all time servers to /etc/ntp.conf
+    for SERVER in "${NTP_SERVERS[@]}"; do
+	if echo "server $SERVER" >> "$ntp_conf"; then
+	    echo "Successfully added $SERVER to $ntp_conf"
+	else
+	    echo "Failed to add $SERVER to $ntp_conf"
+	fi
+    done
+}
+
+enable_networktime() {
+    if systemsetup -setusingnetworktime on; then
+	echo "Successfully enabled network time."
+    else
+	echo "Failed to enable network time."
+    fi
+}
+
+set_default_ntpserver() {
+    local default_ntpserver="${NTP_SERVERS[0]}"
+
+    if systemsetup -setnetworktimeserver "$default_ntpserver"; then
+	echo "Successfully set default ntp server to $default_ntpserver"
+	enable_networktime
+    else
+	echo "Failed to set default ntp server to $default_ntpserver"
+    fi
+}
+
+set_auto_timezone() {
+    local auto_timezone_plist="/Library/Preferences/com.apple.timezone.auto"
+
+    if defaults write "$auto_timezone_plist" Active -bool true; then
+	echo "Successfully set automatic timezone based on location."
+    else
+	echo "Failed to set automatic timezone based on location."
+    fi
+}
+
+main() {
+    local timezone="$1"
+
+    check_root
+
+    if [[ -z "$timezone" ]]; then
+	usage
+	exit 1
+    fi
+
+    check_timezone "$timezone"
+    set_default_timezone "$timezone"
+
+    add_all_ntpservers
+    set_default_ntpserver
+
+    set_auto_timezone
+}
+
+main "$@"

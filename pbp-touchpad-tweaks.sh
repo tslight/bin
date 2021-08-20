@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# https://wiki.pine64.org/index.php/Pinebook_Pro#X-Windows_.26_trackpad_settings
+synclient MinSpeed=0.25
+synclient TapButton1=1
+synclient TapButton2=3
+synclient TapButton3=2
+synclient FingerLow=30
+synclient PalmDetect=1
+synclient MaxTapTime=250
+synclient VertScrollDelta=64
+synclient HorizScrollDelta=64

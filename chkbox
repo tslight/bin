@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+usage () {
+    echo "
+$(basename "$0") [OPTIONS]
+
+Create a checkbox menu from a list of options.
+"
+}
+
+show_menu () {
+    clear
+    echo
+    echo "Enter the corresponding number to toggle a selection."
+    echo "Enter a to toggle all, r to reset selection or q to quit."
+    echo
+    for i in "${!options[@]}"; do
+	printf "%3d%s) %s\n" $((i+1)) "${choices[i]:- }" "${options[i]}"
+    done
+    echo
+}
+
+get_selection () {
+    selectall=false options=("$@")
+
+    while :; do
+	show_menu
+	[[ "$msg" ]] && { echo "$msg"; echo; }
+	read -rep "----> " input
+	case "$input" in
+	    A|a)
+		if "$selectall"; then
+		    for i in "${!options[@]}"; do
+			choices[i]=""
+		    done
+		    selectall=false
+		else
+		    for i in "${!options[@]}"; do
+			choices[i]="+"
+		    done
+		    selectall=true
+		fi
+		;;
+	    Q|q)
+		break
+		;;
+	    R|r)
+		for i in "${!options[@]}"; do
+		    choices[i]=""
+		done
+		;;
+	    *)
+		# regex to catch digits between 1-99, but number must be less than size of array
+		if ! [[ "$input" =~ ^[1-9]$|^[1-9][0-9]+$ && "$input" -le "${#options[@]}" ]]; then
+		    msg="Invalid option: $input"
+		    continue
+		fi
+		((input--))
+		if [[ "${choices[input]}" ]]; then
+		    choices[input]=""
+		else
+		    choices[input]="+"
+		fi
+		for i in "${!options[@]}"; do
+		    if [[ "${choices[i]}" ]]; then
+			selectall=true
+		    else
+			selectall=false
+			break
+		    fi
+		done
+		msg=""
+		;;
+	esac
+    done
+    for i in "${!options[@]}"; do
+	[[ "${choices[i]}" ]] && selected+=("${options[i]}")
+    done
+}
+
+chkbox () {
+    if [[ "$#" -gt 0 ]]; then
+	get_selection "$@"
+	echo
+	if [[ "${#selected[@]}" -gt 0 ]]; then
+	    echo "Selected items: ${selected[@]}"; echo
+	fi
+    else
+	usage
+    fi
+}
+
+chkbox "$@"

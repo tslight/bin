@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+myshuf() {
+    # seed random from pid as bash's $RANDOM is a 32bit number (between 0 & 32767) &
+    # there are currently 235886 words in /usr/share/dict/words!
+    RANDOM=$$
+    # $(seq "$NUMWORDS") also works but is potentially less portable.
+    for ((i=1; i <= NUMWORDS; i++)); do
+	rnum=$((RANDOM * RANDOM % LINES + 1))
+	sed -n "$rnum p" "$WORDFILE" # print line at rnum
+    done
+}
+
+getwords() {
+    if [[ -r "/usr/share/dict/words" ]]; then
+	WORDFILE="/usr/share/dict/words"
+	LINES=$(wc -l < "$WORDFILE")
+	MAXWORDS=$((LINES/4)) # stop abuse!
+    else
+	echo "Dictionary either doesn't exist or isn't readable."
+	exit 1
+    fi
+}
+
+getnum() {
+    # if no argument print 1 word otherwise print x number
+    [[ -z "$1" ]] && NUMWORDS="1" || NUMWORDS="$1"
+    # sanity check
+    if ! [[ "$NUMWORDS" =~ ^[0-9]+$ && "$NUMWORDS" -lt "$MAXWORDS" ]]; then
+	echo "You must enter an integer smaller than $MAXWORDS."
+	exit 1
+    fi
+}
+
+rwords() {
+    getwords; getnum "$@"
+    # use shuf (gshuf if installed using homebrew on macos) from coreutils if
+    # available as it's orders of magnitude faster than my bash implementation.
+    if [[ $(command -v shuf) ]]; then
+	shuf -n "$NUMWORDS" "$WORDFILE"
+    elif [[ $(command -v gshuf) ]]; then
+	gshuf -n "$NUMWORDS" "$WORDFILE"
+    else
+	myshuf
+    fi
+}
+
+rwords "$@"

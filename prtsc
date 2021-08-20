@@ -1,0 +1,7 @@
+#!/bin/sh
+SCROTDIR="$HOME/img/scrots"
+[ -d "$SCROTDIR" ] || mkdir -p "$SCROTDIR"
+SCROTPATH="$SCROTDIR/$(date +%Y%m%dT%H%M%S).png"
+echo "$SCROTPATH"
+maim "$SCROTPATH" "$@"
+dunstify -u low "Screenshot saved to $SCROTPATH"

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# check for existence of a list of directories and, optionally, if they don't
+# exist, create them.
+chkdirs () {
+    local opts="$1" OPTIND=1 make=false retval=0
+
+    if [[ ! -z "$opts" && "$opts" =~ ^-[A-Za-z] ]]; then
+	while getopts "m" opts; do
+	    case "$opts" in
+		m)
+		    make=true
+		    ;;
+		\?)
+		    echo "Invalid option: -$OPTARG"
+		    exit 1
+		    ;;
+	    esac
+	done
+	shift "$((OPTIND-1))"
+    fi
+
+    local dirs=("$@")
+
+    for d in "${dirs[@]}"; do
+	if [[ -d "$d" ]]; then
+	    echo "$d already exists."
+	else
+	    echo "$d doesn't exist."
+	    ((retval++))
+	    if "$make"; then
+		if mkdir -p "$d"; then
+		    echo "Successfully created $d."
+		    ((retval--))
+		else
+		    echo "Error creating $d."
+		fi
+	    fi
+	fi
+    done
+
+    ((retval>0)) && return 1 || return 0
+}
+
+chkdirs "$@"

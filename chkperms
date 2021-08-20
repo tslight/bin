@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+
+# Define colors to be used when echoing output
+NC=`tput sgr0`;
+BLACK=`tput setaf 0`;
+RED=`tput setaf 1`;
+GREEN=`tput setaf 2`;
+YELLOW=`tput setaf 3`;
+BLUE=`tput setaf 4`;
+MAGENTA=`tput setaf 5`;
+CYAN=`tput setaf 6`;
+WHITE=`tput setaf 7`;
+
+# function that echos help page.
+usage () {
+    echo -n "
+$(basename $0) [FILE OR DIRECTORY] [OPTIONAL OCTAL VALUE]
+
+This script takes a file or directory as an argument, and an octal
+permissions value as an optional second argument.
+
+It checks whether or not the permissions of the given directory or
+file match the provided octal value. If not it asks if you would like
+to change them.
+
+If no octal value is given, it defaults to 755 for directories
+and 644 for files.
+
+"
+}
+
+# function to read in an answer from the user. keep looping until user
+# enters valid answer.  returns 0 for yes, 1 for no or quit, and an
+# error message for anything else (before re-looping)
+ask () {
+    while :
+    do
+	read -e -p "$1" ans;
+	case $ans in
+	    [yY]*)
+		return 0
+		break
+		;;
+	    [nN]*)
+		return 1
+		break
+		;;
+	    [qQ]*)
+		exit 1
+		break
+		;;
+	    *)
+		echo "${RED}You must enter either y or n to continue.${NC}";
+		echo "${RED}You can also enter q to quit this .${NC}";
+		;;
+	esac;
+    done
+}
+
+# function that checks if argument variable is set, and then whether
+# or not it's a valid directory.
+checktype () {
+    if [ ! -z "$1" ]; then
+	if [ -f "$1" ]; then
+	    echo "file"
+	    return 0
+	    break
+	elif [ -d "$1" ]; then
+	    echo "dir"
+	    return 0
+	else
+	    echo "invalid"
+	    return 1
+	    break
+	fi
+    else
+	echo "missing"
+	return 1;
+    fi
+}
+
+checkperms () {
+    target="$1"
+    desiredperms="$2"
+    currentperms=$(stat -f "%A" "$target")
+    if [ "$currentperms" -ne "$desiredperms" ]; then
+	echo "${MAGENTA}Permissions are set to $currentperms, not $desiredperms.${NC}"
+	if ask "${YELLOW}Would you like to change the permissions?${NC} "; then
+	    chmod "$desiredperms" "$target"
+	    checkperms "$target" "$desiredperms"
+	else
+	    echo "${MAGENTA}Not changing perms."
+	fi
+    else
+	echo "${CYAN}Permissions are set to $currentperms, which is what you wanted :-)${NC}"
+    fi
+}
+
+type=$(checktype "$1")
+
+case "$type" in
+    file)
+	if [ -z "$2" ]; then
+	    checkperms "$1" "644"
+	else
+	    checkperms "$1" "$2"
+	fi
+	;;
+    dir)
+	if [ -z "$2" ]; then
+	    checkperms "$1" "755"
+	else
+	    checkperms "$1" "$2"
+	fi
+	;;
+    invalid)
+	echo
+	echo "${RED}Invalid file or directory.${NC}"
+	usage
+	exit 1
+	;;
+    missing)
+	echo
+	echo "${RED}Missing file or directory.${NC}"
+	usage
+	exit 1
+	;;
+esac

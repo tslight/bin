@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# extract rsync logs from each day from a monolithic rsyncd log
+
+SRCLOG="$1"
+# get array of unique lines that begin with YYYY/MM/DD
+DATES=($(awk '{print $1}' "$SRCLOG" | grep -E '^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$' | uniq))
+
+src_date="${SRCLOG/#*-}"  # Get date suffix of source log using variable substitution
+src_prefix="${SRCLOG%-*}" # Get prefix of source log using variable substitution
+
+# loop over array of unique dates and pipe lines that match that contents into
+# their own files
+for d in "${DATES[@]}"; do
+    # get rid of backslashes to create new date suffix based on date from log
+    # file.
+    i="${d///}"
+    # check we are not trying to pipe into the file we're reading from!
+    if [ "$i" != "src_date" ]; then
+	grep "$d" "$SRCLOG" > "$src_prefix"-"$i"
+    else
+	# if we are create a new temp file
+	grep "$d" "$SRCLOG" > "$SRCLOG.new"
+    fi
+done
+
+# backup source file and move temp file to correct file
+mv "$SRCLOG" "$SRCLOG.bak"
+mv "$SRCLOG.new" "$SRCLOG"

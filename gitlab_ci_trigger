@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+trigger() {
+    local token="$1" ref="$2" url="$3"
+    curl -X POST -F token="$token" -F ref="$ref" "$url"
+}
+
+[[ -z "$1" ]] && \
+    TOKEN=$(read -rep "Enter token: ") || \
+	TOKEN="$1"
+[[ -z "$2" ]] && \
+    REF=$(read -rep "Enter branch or tag: ") || \
+	REF="$2"
+[[ -z "$3" ]] && \
+    URL=$(read -rep "Enter URL: ") || \
+	URL="$3"
+
+trigger "$TOKEN" "$REF" "$URL"

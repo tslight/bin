@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# convert bytes to human readable unit
+convert () {
+    local -i bytes="$1"
+    local hr unit
+
+    # use bc to do floating point arithmetic
+    # below is awk equivalent if on system without bc...
+    # hr=$(awk -v bytes="$bytes" "BEGIN {printf \"%.2f\n\", bytes/1024**3}")
+    if ((bytes > 1073741824)); then
+	hr=$(echo "scale=2; $bytes/1024^3" | bc)
+	unit="GB"
+    elif ((bytes > 1048576)); then
+	hr=$(echo "scale=2; $bytes/1024^2" | bc)
+	unit="MB"
+    else
+	hr=$(echo "scale=2; $bytes/1024" | bc)
+	unit="KB"
+    fi
+    echo "$hr $unit"
+}

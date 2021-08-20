@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+import curses
+
+
+def mkculor():
+    """
+    Initialised a bunch of curses colors (culors - gerrit'?) and sets them to
+    sane names via the wonder of dictionaries!
+    """
+    curses.use_default_colors()  # https://stackoverflow.com/a/44015131
+    culor = {}
+    names = [
+        "black",
+        "red",
+        "green",
+        "yellow",
+        "blue",
+        "magenta",
+        "cyan",
+        "white",
+    ]
+
+    # using 200 prefix so as not to potentially clobber other user defined colors
+    for index, color in enumerate(names):
+        # black background, primary colors foreground
+        curses.init_pair(index + 200, index, curses.COLOR_BLACK)
+        culor[f"black_{color}"] = curses.color_pair(index + 200)
+        culor[f"black_{color}_bold"] = curses.color_pair(index + 200) | curses.A_BOLD
+
+        # primary colors background, white foreground
+        curses.init_pair(index + 207, curses.COLOR_WHITE, index)
+        culor[f"{color}_white"] = curses.color_pair(index + 207)
+        culor[f"{color}_white_bold"] = curses.color_pair(index + 207) | curses.A_BOLD
+
+        # primary colors background, black foreground
+        curses.init_pair(index + 214, curses.COLOR_BLACK, index)
+        culor[f"{color}_black"] = curses.color_pair(index + 214)
+        culor[f"{color}_black_bold"] = curses.color_pair(index + 214) | curses.A_BOLD
+
+    return culor
+
+
+def main(stdscr):
+    culor = mkculor()
+
+    for key, value in culor.items():
+        msg = f"Key: {key}, Value: {value}\n"
+        stdscr.addstr(msg, value)
+
+    stdscr.getch()
+
+
+curses.wrapper(main)

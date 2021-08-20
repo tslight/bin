@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# infinite loop to get simple yes or no user input
+ask() {
+    local question="$1"
+
+    while :; do
+	# -e for readline bindings
+	# -r to not mangle backslashes
+	# -n 1 for execution without return
+	read -rep "$question " ans
+	case $ans in
+	    [Yy][Ee][Ss]|[Yy])
+		return 0
+		;;
+	    [Nn][Oo]|[Nn])
+		return 1
+		;;
+	    [Qq][Uu][Ii][Tt]|[Qq])
+		exit 0
+		;;
+	    *)
+		echo "$ans is invalid. Enter (y)es, (n)o or (q)uit."
+		;;
+	esac
+    done
+}

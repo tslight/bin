@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+if [ -x /usr/bin/seq ]; then
+    PROG=/usr/bin/seq
+elif [ -x /usr/bin/jot ]; then
+    PROG=/usr/bin/jot
+fi
+
+for i in $("$PROG" 1 "$2"); do
+    if [ "$1" == "random" ]; then
+	echo -n "$(rword) "
+    else
+	echo -n "$1"
+    fi
+done
+echo

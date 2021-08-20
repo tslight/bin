@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# insert log file boilerplate
+mkplate () {
+    local log="$1" name="$2" str="$3" date time
+
+    date="$(date '+%A %d %B %Y')"
+    time="$(date '+%H:%M:%S')"
+    msg="${str}ed running ${name} at ${time}"
+    printf "\\nDATE: %s\\n%s\\n\\n" "$date" "$msg" >> "$log"
+}

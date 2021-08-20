@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+NAME="$(basename "$0")"
+DATE="$(date '+%Y-%m-%d')"
+LOG=/var/log/"$NAME"_"$DATE".log
+
+check_traceroute() {
+    echo "Cannot find obvious issue with DNS, Interface, IP, Gateway or Firewall."
+    echo "Check traceroute output to identify potential issues with other devices."
+    traceroute 8.8.8.8
+    exit 1
+}
+
+check_iptables() {
+    IFS=; dropped=($(iptables -L | grep DROP)); IFS='\n\s\t'
+    if [[ -n "$dropped" ]]; then
+	echo "Please check the following iptables DROP entries are correct:"
+	echo "${dropped[0]}"
+    else
+	echo "iptables isn't dropping any packets."
+    fi
+    check_traceroute
+}
+
+check_ufw() {
+    local ufw_status="$(ufw status | awk '/Status/ {print $2}')"
+    case "$ufw_status" in
+	'active')
+	    # Set IFS to nil to retain linebreaks in output string. If denied is
+	    # not an array, resulting string is one line. If denied is set to an
+	    # array with default IFS, then each word is an element.
+	    IFS=; denied=($(ufw_status | grep DENY)); IFS='\n\s\t'
+	    if [[ -n "$denied" ]]; then
+		echo "The following ports or services are blocked by UFW:"
+		echo "${denied[0]}"
+	    else
+		echo "UFW is not blocking anything."
+	    fi
+	    ;;
+	'inactive')
+	    echo "UFW is not enabled."
+	    ;;
+	'*')
+	    check_iptables
+	    ;;
+    esac
+    check_traceroute
+}
+
+check_gateway() {
+    local gateway="$(route -n | awk '/\s+UG\s+/ {print $2}')"
+
+    if [[ -z "$gateway" ]]; then
+	echo "Gateway not configured. Please add gateway to /etc/network/interfaces"
+	exit 1
+    else
+	if ping -c 4 "$gateway" &> /dev/null; then
+	    echo "Gateway at $gateway is pingable."
+	    check_ufw
+	else
+	    echo "Gateway at $gateway is not pingable. Please fix gateway." | tee - "$LOG"
+	    exit 1
+	fi
+    fi
+}
+
+check_interface() {
+    local interfaces=($(ifconfig -s | awk '!/^Iface|^lo/ {print $1}'))
+
+    if [[ -z "$interfaces" ]]; then
+	echo "No interfaces have been configured."
+	echo "Please configure an interface in /etc/network/interfaces."
+	exit 1
+    else
+	echo "The following interfaces have been configured:"
+	for i in "${interfaces[@]}"; do
+	    ip="$(ifconfig $i | awk -F '[ :]+' '/inet addr/ {print $4}')"
+	    subnet="$(ifconfig $i | awk -F '[ :]+' '/inet addr/ {print $8}')"
+	    echo "$i has $ip IP address with a $subnet subnet mask."
+	done
+	check_gateway
+    fi
+}
+
+check_dns() {
+    local nameserver="$(nslookup 8.8.8.8 | awk '/Server/ {print $1}')"
+
+    if [[ -z "$nameserver" ]]; then
+	echo "No nameservers have been configured."
+	exit 1
+    else
+	echo "Current name server is $nameserver."
+	if ping -c 4 "$nameserver" &> /dev/null; then
+	    echo "$nameserver is pingable. Please check it's configuration."
+	    exit 1
+	else
+	    echo "$nameserver is not pingable."
+	    exit 1
+	fi
+    fi
+}
+
+check_ping() {
+    if  ping -c 4 www.google.com &> /dev/null; then
+	echo "Google is pingable via domain name."
+	exit 0
+    fi
+    if ping -c 4 8.8.8.8 &> /dev/null; then
+	echo "Google is pingable via IP address, but not domain name."
+	echo "Checking DNS configuration..."
+	check_dns
+    else
+	echo "Cannot ping google via IP address."
+	echo "Checking IP configuration"
+	check_interface
+    fi
+}
+
+# https://serverfault.com/a/103569 - interesting
+# https://serverfault.com/a/103509 - seems a better fit for what I'm doing.
+(check_ping) 2>&1 | tee -a "$LOG"

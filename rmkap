@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+NC=$(tput sgr0)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+
+KAV="/Library/Application Support/Kaspersky Lab/KAV/Binaries/UninstallScript"
+AGENT="/Library/Application Support/Kaspersky Lab/klnagent/Binaries/UninstallScript"
+LOG="/tmp/rmkap.sh.log"
+
+ask () {
+    question="$1"
+
+    while :; do
+	read -rep "$question" ans
+	case $ans in
+	    [Yy]*)
+		return 0
+		;;
+	    [Nn]*)
+		return 1
+		;;
+	    [Qq]*)
+		echo
+		exit 0
+		;;
+	    *)
+		echo
+		echo "${RED}$ans is invalid. Enter (y)es, (n)o or (q)uit.${NC}"
+		echo
+		;;
+	esac
+    done
+}
+
+chkrun () {
+    script="$1"
+
+    if [ -x "$script" ]; then
+	if sudo "$script" >> "$LOG" 2>&1; then
+	    echo
+	    echo "${GREEN}$script completed sucessfully."
+	    echo
+	else
+	    echo
+	    echo "${RED}$script completed with errors. Take a look at $LOG."
+	    echo
+	fi
+    else
+	echo
+	echo "${RED}Could not find $script."
+	echo
+	exit 1
+    fi
+}
+
+chkperms () {
+    target="$1"
+    desiredperms="$2"
+    currentperms=$(stat -f "%A" "$target")
+
+    if [ "$currentperms" -ne "$desiredperms" ]; then
+	echo
+	echo "${RED}Permissions are set to $currentperms, not $desiredperms.${NC}"
+	echo
+	echo "${RED}Boot into DeployStudio to run the Sophos Fix Library Perms workflow.${NC}"
+	echo
+    else
+	echo
+	echo "${GREEN}Permissions are set to $currentperms, which is what you wanted :-)${NC}"
+	echo
+	echo "${GREEN}After rebooting, you will be ready to install Sophos.${NC}"
+	echo
+    fi
+}
+
+chkrun "$KAV"
+chkrun "$AGENT"
+chkperms "/Library" "0755"
+ask "Would you like to reboot now? " && sudo reboot

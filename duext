@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+
+SCRIPT=$(basename "$0")
+VERBOSE=false
+PAGE=false
+
+usage () {
+    echo "
+Usage: $SCRIPT [-hvp] [PATH] [EXTENSION]
+
+OPTIONAL PARAMETERS
+-------------------
+  -h    Display this help and exit.
+  -v    Print list of found files as well as total size.
+  -p    Pipe output to $PAGER
+"
+}
+
+# infinite loop to get simple user input
+ask () {
+    local question="$1" ans
+
+    while :; do
+	# -n 1 to exit after first letter
+	# -r to keep backslashes in tact
+	# -e for readline bindings
+	read -n 1 -rep "$question" ans;
+	case "$ans" in
+	    y|Y)
+		return 0
+		;;
+	    n|N)
+		return 1
+		;;
+	    q|Q)
+		echo
+		exit 1
+		;;
+	    *)
+		echo
+		echo "($ans) is invalid. Enter (y)es, (n)o or (q)uit.";
+		echo
+		;;
+	esac;
+    done
+}
+
+get_dir () {
+    local dir
+    echo
+    read -rep "Enter a path to search: " dir
+    # https://serverfault.com/a/417306
+    DIR=$(eval echo "${dir//>}") # sanitize input so test -d and find work
+}
+
+get_ext () {
+    local ext
+    echo
+    read -rep "Enter a file extension to search for: " ext
+    EXT="$ext"
+}
+
+get_verbose () {
+    echo
+    if ask "Would you like to view all the file paths as well as the total size? "; then
+	VERBOSE=true
+    fi
+}
+
+get_page () {
+    echo
+    if ask "Would you like to pipe the output to $PAGER? "; then
+	PAGE=true
+    fi
+}
+
+check_dir () {
+    if [[ ! -d "$DIR" ]]; then
+	printf "\\n%s is not a valid directory.\\n" "$DIR"
+	usage
+	exit 1
+    fi
+}
+
+check_args () {
+    case "$#" in
+	0)
+	    get_dir
+	    check_dir
+	    get_ext
+	    get_verbose
+	    get_page
+	    return 0
+	    ;;
+	1)
+	    DIR=$(eval echo "${1//>}") # sanitize input so test -d and find work
+	    check_dir
+	    get_ext
+	    return 0
+	    ;;
+	2)
+	    DIR=$(eval echo "${1//>}") # sanitize input so test -d and find work
+	    EXT="$2"
+	    check_dir
+	    return 0
+	    ;;
+    esac
+}
+
+check_opts () {
+    while getopts "hvp" opts; do
+	case "$opts" in
+	    h)
+		usage
+		exit 0
+		;;
+	    v)
+		VERBOSE=true
+		;;
+	    p)
+		PAGE=true
+		;;
+	    \?)
+		usage
+		exit 1
+		;;
+	esac
+    done
+    shift "$((OPTIND-1))"
+    check_args "$@"
+}
+
+get_unit () {
+    local total="$1"
+    if ((total>1048576)); then
+	total=$(echo "$total 1024" | awk '{printf "%.2f", $1/$2/$2}')
+	echo "$total GB"
+    elif ((total>1024)); then
+	total=$(echo "$total 1024" | awk '{printf "%.2f", $1/$2}')
+	echo "$total MB"
+    else
+	echo "$total KB"
+    fi
+}
+
+main () {
+    IFS=
+    local -i total=0
+    local -a files=() filesizes=() sizes=()
+
+    # https://stackoverflow.com/a/8214748
+    while IFS= read -d $'\0' -r f; do
+	files+=("$f")
+    done < <(find "$DIR" -type f -iregex ".*\.\($EXT\)$" -print0)
+
+    for f in "${files[@]}"; do
+	filesize=$(du -sk "$f")
+	filesizes+=("$filesize")
+	sizes+=($(echo "$filesize"| awk '{print $1}'))
+    done
+
+    for s in "${sizes[@]}"; do
+	total=$((total+s))
+    done
+
+    out=$(get_unit "$total")
+
+    if "$VERBOSE"; then
+	file="/tmp/duext.out"
+	IFS=$'\n' sorted=($(sort -nr <<< "${filesizes[*]}"))
+
+	printf "\\nTotal size of %s files in %s = %s\\n\\n" "$EXT" "$DIR" "$out" > "$file"
+	printf "%s\n" "${sorted[@]}" >> "$file"
+	printf "\\nTotal size of %s files in %s = %s\\n\\n" "$EXT" "$DIR" "$out" >> "$file"
+
+	if "$PAGE"; then
+	    "$PAGER" "$file"
+	else
+	    cat "$file"
+	fi
+    else
+	printf "\\nTotal size of %s files in %s = %s\\n\\n" "$EXT" "$DIR" "$out"
+    fi
+}
+
+check_opts "$@"
+main "$@"

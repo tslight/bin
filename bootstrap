@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+# Run this:
+# bash < <(curl -s https://gitlab.com/tspub/bin/raw/master/bootstrap)
+
+DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+URL="git@gitlab.com:tspub"
+
+update_env() {
+    export PATH="$PATH:$HOME/bin:$HOME/.local/bin"
+    source "$HOME/bin/lib/bash/ask"
+    source "$HOME/bin/lib/bash/colors"
+}
+
+clone_repo() {
+    local name="$1"
+    local dest="$HOME/${name}"
+    local url="$URL/${name}.git"
+
+    if [ -d "$dest/.git" ]; then
+	echo "$url already cloned to $dest."
+    else
+	if mkdir -p "$dest"; then
+	    if git clone -q "$url" "$dest"; then
+		echo "Successfully cloned $url."
+	    else
+		echo "Failed to clone $url."
+		exit 1
+	    fi
+	else
+	    echo "Could not create $dest."
+	    exit 1
+	fi
+    fi
+}
+
+lazypkg() {
+    case "$OSTYPE" in
+	darwin*)
+	    lazymac
+	    ;;
+	linux*)
+	    source /etc/os-release
+	    case "$ID" in
+		debian|ubuntu)
+		    "$HOME/bin/lazydeb"
+		    ;;
+		centos|fedora)
+		    "$HOME/bin/lazyrpm"
+		    ;;
+		*)
+		    echo "$ID not supported"
+		    ;;
+	    esac
+	    ;;
+	*)
+	    "$OSTYPE not supported"
+	    ;;
+    esac
+}
+
+getlazy() {
+    local token="$1" dest="$2"
+
+    { [ -d /tmp/lazygit ] || git clone "$URL/js/lazygit" /tmp/lazygit; } && \
+	cd /tmp/lazygit && \
+	npm install && \
+	node ./lazygitlab.js "$token" "$dest" && \
+	cd "$dest/tspub/js/lazygit" &&
+	npm install && npm link
+}
+
+cleanup() {
+    # Use "${var:?}" to ensure this never expands to /bin
+    rm -rf "${var:?HOME}/bin" &&
+	ln -sf "${HOME}/src/tspub/bin" "${HOME}/bin"
+}
+
+main() {
+    { command -v git &> /dev/null || sudo apt -y install git; } && \
+        clone_repo "bin" && update_env
+    ask "Manage packages?" && lazypkg
+    ask "Clone all repos?" && getlazy "$1" "$2"
+    ask "Configure Emacs?" && tangle.sh
+    cleanup
+}
+
+main "$@"

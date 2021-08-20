@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+dice()
+{
+    D0=$(echo $RANDOM | cut -b1)
+    D1=$(echo $RANDOM | cut -b1)
+
+    if ((D0==D1)); then
+	echo "You won. Whoopee."
+    else
+	echo "Failed again. Loser."
+    fi
+
+    read -rep "Roll Dice? " INPUT
+
+    if [[ "$INPUT" =~ ^[Yy]$|^[Yy][Ee][Ss]$ ]];then
+	dice
+    else
+	echo "Goodbye."
+	exit 0
+    fi
+}
+
+dice

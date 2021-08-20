@@ -1,0 +1,16 @@
+#!/bin/bash
+
+AD_USERS=($(wbinfo -u))
+AD_GROUPS=($(wbinfo -g))
+
+for u in "${AD_USERS[@]}"; do
+    inf="$(wbinfo -i "$u")"
+    sid="$(wbinfo -n "$u" | awk '{print $1}')"
+    printf "INFO = %-90s\t SID = %-90s\n" "$inf" "$sid"
+done
+
+for g in "${AD_GROUPS[@]}"; do
+    inf="$(wbinfo --group-info="$g")"
+    sid="$(wbinfo -n "$g" | awk '{print $1}')"
+    printf "INFO = %-90s\t SID = %-90s\n" "$inf" "$sid"
+done

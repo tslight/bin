@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+read_dom () {
+    local IFS=\>
+    read -d \< ENTITY CONTENT
+}
+
+while read_dom; do
+    echo "$ENTITY => $CONTENT"
+done < "$1"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+mkemacs() {
+    local url="https://ftpmirror.gnu.org/gnu/emacs"
+    local version="$1"
+    local install="$2"
+
+    wget --quiet \
+	 --no-clobber \
+	 --show-progress \
+	 --directory-prefix /tmp \
+	 "$url/emacs-$version.tar.gz" && \
+	tar xvf "/tmp/emacs-$version.tar.gz" -C /tmp/ && \
+	src="/tmp/emacs-$version/" && \
+	cd "$src" && \
+	./autogen.sh && \
+	./configure --with-x-toolkit=lucid && \
+	make -j4
+
+    if [[ "$install" == "install" ]]; then
+	cd "$src" && sudo make install
+    fi
+}
+
+mkemacs "$@"
