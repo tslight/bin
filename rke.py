@@ -37,6 +37,12 @@ def get_args():
         help="show cluster's nodes information.",
     )
     parser.add_argument(
+        "-i",
+        "--ip",
+        action="store_true",
+        help="show cluster's nodes external IP addresses.",
+    )
+    parser.add_argument(
         "-k",
         "--kubeconfig",
         action="store_true",
@@ -146,7 +152,7 @@ def get_kubeconfig(cluster):
 
 
 def write_kubeconfig(destination, cluster):
-    kubeconfig_path = f"{destination}/{cluster_name}.yml"
+    kubeconfig_path = f"{destination}/rke-{cluster_name}.yml"
 
     print(f"Writing {cluster_name} kubeconfig to {kubeconfig_path}\n")
     kubeconfig = get_kubeconfig(cluster)
@@ -186,26 +192,31 @@ if __name__ == "__main__":
     if len(cluster_names) < 1:
         cluster_names = chopt(get_cluster_names(get_all_clusters()))
 
-    for cluster_name in cluster_names:
-        cluster = get_cluster(cluster_name)
-        print(f"\n{cluster_name} API Endpoint: {cluster['apiEndpoint']}")
+    if cluster_names:
+        for cluster_name in cluster_names:
+            cluster = get_cluster(cluster_name)
 
-        if args.kubeconfig:
-            write_kubeconfig(destination, cluster)
-
-        if args.nodes:
             nodes = get_cluster_nodes(cluster)
-            for n in nodes:
-                node = get_node(n["nodeId"])
-                node_template = get_node_template(node["nodeTemplateId"])
-                print(
-                    f"HOSTNAME: {node['hostname']}\n"
-                    + f"EXTERNAL IP: {node['externalIpAddress']}\n"
-                    + f"INTERNAL IP: {node['ipAddress']}\n"
-                    + f"OS: {node['info']['os']['operatingSystem']}\n"
-                    + f"CONTROL PLANE: {node['controlPlane']}\n"
-                    + f"ETCD: {node['etcd']}\n"
-                    + f"WORKER: {node['worker']}\n"
-                    + f"TEMPLATE: {node_template['name']}\n"
-                    + f"TEMPLATE DRIVER: {node_template['driver']}\n"
-                )
+
+            if args.ip:
+                for n in nodes:
+                    print(n["address"])
+
+            if args.kubeconfig:
+                write_kubeconfig(destination, cluster)
+
+            if args.nodes:
+                for n in nodes:
+                    node = get_node(n["nodeId"])
+                    node_template = get_node_template(node["nodeTemplateId"])
+                    print(
+                        f"HOSTNAME: {node['hostname']}\n"
+                        + f"EXTERNAL IP: {node['externalIpAddress']}\n"
+                        + f"INTERNAL IP: {node['ipAddress']}\n"
+                        + f"OS: {node['info']['os']['operatingSystem']}\n"
+                        + f"CONTROL PLANE: {node['controlPlane']}\n"
+                        + f"ETCD: {node['etcd']}\n"
+                        + f"WORKER: {node['worker']}\n"
+                        + f"TEMPLATE: {node_template['name']}\n"
+                        + f"TEMPLATE DRIVER: {node_template['driver']}\n"
+                    )
