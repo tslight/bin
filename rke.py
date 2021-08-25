@@ -37,10 +37,22 @@ def get_args():
         help="show cluster's nodes information.",
     )
     parser.add_argument(
-        "-i",
+        "-I",
         "--ip",
         action="store_true",
+        help="show cluster's nodes IP addresses.",
+    )
+    parser.add_argument(
+        "-e",
+        "--external_ip",
+        action="store_true",
         help="show cluster's nodes external IP addresses.",
+    )
+    parser.add_argument(
+        "-i",
+        "--internal_ip",
+        action="store_true",
+        help="show cluster's nodes internal IP addresses.",
     )
     parser.add_argument(
         "-k",
@@ -154,7 +166,7 @@ def get_kubeconfig(cluster):
 def write_kubeconfig(destination, cluster):
     kubeconfig_path = f"{destination}/rke-{cluster_name}.yml"
 
-    print(f"Writing {cluster_name} kubeconfig to {kubeconfig_path}\n")
+    print(f"Writing {cluster_name} kubeconfig to {kubeconfig_path}")
     kubeconfig = get_kubeconfig(cluster)
     with open(kubeconfig_path, "w") as f:
         f.write(kubeconfig)
@@ -199,6 +211,16 @@ if __name__ == "__main__":
             nodes = get_cluster_nodes(cluster)
 
             if args.ip:
+                for n in nodes:
+                    print(
+                        f"{n['hostnameOverride']} {n['address']} {n['internalAddress']}"
+                    )
+
+            if args.internal_ip:
+                for n in nodes:
+                    print(n["internalAddress"])
+
+            if args.external_ip:
                 for n in nodes:
                     print(n["address"])
 
