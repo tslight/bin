@@ -202,7 +202,9 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if len(cluster_names) < 1:
-        cluster_names = chopt(get_cluster_names(get_all_clusters()))
+        print("No cluster names specified, getting all...")
+        cluster_names = get_cluster_names(get_all_clusters())
+        # print("\n".join(cluster_names))
 
     if cluster_names:
         for cluster_name in cluster_names:
