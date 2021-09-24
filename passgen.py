@@ -5,7 +5,7 @@ import random
 
 
 def get_words():
-    dictionary_file = "/usr/share/dict/words1"
+    dictionary_file = "/usr/share/dict/words"
     words = []
 
     try:
