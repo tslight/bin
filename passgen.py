@@ -2,6 +2,7 @@
 
 from argparse import ArgumentParser
 import random
+import string
 
 
 def get_words():
@@ -19,21 +20,16 @@ def get_words():
 
 
 def get_chars(args):
-    lower = "abcdefghijklmnopqrstuvwxyz"
-    upper = lower.upper()
-    numbers = "0123456789"
-    symbols = "[]{}():;*/\\.,#~`|\"''£$%^-=+?"
-
-    all = lower + upper + numbers + symbols
+    all = string.printable.replace(string.whitespace, "")
 
     if args.no_lower:
-        all = all.replace(lower, "")
+        all = all.replace(string.ascii_lowercase, "")
     if args.no_numbers:
-        all = all.replace(numbers, "")
+        all = all.replace(string.digits, "")
     if args.no_symbols:
-        all = all.replace(symbols, "")
+        all = all.replace(string.punctuation, "")
     if args.no_upper:
-        all = all.replace(upper, "")
+        all = all.replace(string.ascii_uppercase, "")
 
     return all
 
@@ -49,17 +45,28 @@ def get_args():
     return p.parse_args()
 
 
-def main():
-    args = get_args()
-
+def get_password(args):
     try:
         if args.words:
             words = get_words()
             password = " ".join(random.sample(words, args.length))
         else:
             chars = get_chars(args)
-            password = "".join(random.sample(chars, args.length))
-        print(password)
+            password = "".join(random.choices(chars, k=args.length))
+        return password
+    except IndexError:
+        raise
+    except ValueError:
+        raise
+
+
+def main():
+    args = get_args()
+
+    try:
+        print(get_password(args))
+    except IndexError:
+        print("You've excluded too many things!")
     except ValueError:
         print("You've excluded too many things!")
     except FileNotFoundError as e:
