@@ -6,6 +6,7 @@ import requests
 import sys
 import urllib
 
+
 class Color:
     def __init__(self):
         """
@@ -65,6 +66,7 @@ class Color:
         self.black_cyan_bold = curses.color_pair(20) | curses.A_BOLD
         self.black_white_bold = curses.color_pair(21) | curses.A_BOLD
 
+
 def generate_magnet(data):
     api_trackers = "&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969%2Fannounce&tr=udp%3A%2F%2F9.rarbg.me%3A2850%2Fannounce&tr=udp%3A%2F%2F9.rarbg.to%3A2920%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969%2Fannounce"
     return f"magnet:?xt=urn:btih:{data['info_hash']}&dn={urllib.parse.quote(data['name'])}{api_trackers}"
@@ -92,6 +94,7 @@ def get_hr_size(bytes):
 
 def get_torrents():
     results = requests.get(f"https://apibay.org/q.php?q={sys.argv[1]}").json()
+    results = sorted(results, key=lambda d: int(d["size"]), reverse=True)
     torrents = []
 
     for result in results:
@@ -108,7 +111,7 @@ def get_torrents():
     return torrents
 
 
-def make_columns(columns, hl):
+def make_columns(columns, hl, longest_column_length):
     color = Color()
     xstart = 0
     for title, items in columns.items():
@@ -116,19 +119,16 @@ def make_columns(columns, hl):
         longest_item = len(max(items, key=len))
         width = max(title_length, longest_item) + 1
         title_win = curses.newwin(1, width, 0, xstart)
-        title_win.erase()
-        title_win.bkgd(' ', color.white_blue)
+        title_win.bkgd(" ", color.white_blue)
         title_win.addstr(0, 0, title)
         title_win.refresh()
-        items_win = curses.newwin(curses.LINES, width, 1, xstart)
-        items_win.erase()
+        items_win = curses.newpad(longest_column_length, width)
 
         itemnum = 0
+        pminrow = 0
 
-        if hl >= curses.LINES:
-            items = items[(hl - curses.LINES) + 1:hl]
-        else:
-            items = items[:curses.LINES]
+        if hl >= curses.LINES - 2:
+            pminrow = hl - curses.LINES + 2
 
         for item in items:
             if itemnum == hl:
@@ -136,14 +136,19 @@ def make_columns(columns, hl):
                 items_win.chgat(itemnum, 0, color.white_magenta_bold)
             else:
                 items_win.addstr(itemnum, 0, item)
+            items_win.noutrefresh(
+                pminrow, 0, 1, xstart, curses.LINES - 1, xstart + width
+            )
             itemnum += 1
 
-        items_win.refresh()
+        curses.doupdate()
         xstart += width
 
+
 def get_longest_column_length(columns):
-    lengths = [len(v) for k,v in columns.items()]
+    lengths = [len(v) for k, v in columns.items()]
     return max(lengths)
+
 
 def test(stdscr):
     torrents = get_torrents()
@@ -154,7 +159,7 @@ def test(stdscr):
     for title in headings:
         columns[title] = [d[title] for d in torrents if title in d]
 
-    key_order = [ "Name", "Size", "Seeders", "Leechers"]
+    key_order = ["Name", "Size", "Seeders", "Leechers"]
     columns = {k: columns[k] for k in key_order}
     longest_column_length = get_longest_column_length(columns)
 
@@ -163,17 +168,23 @@ def test(stdscr):
 
     hl = 0
     while True:
-        make_columns(columns, hl)
+        make_columns(columns, hl, longest_column_length)
         key = stdscr.getch()
         if key == ord("q"):
             break
         elif key == ord("j"):
-            if hl < longest_column_length:
+            if hl <= longest_column_length - 2:
                 hl += 1
         elif key == ord("k"):
             if hl > 0:
                 hl -= 1
+        elif key == ord("\n"):
+            name = columns["Name"][hl]
+            return next((item for item in torrents if item["Name"] == name), None)[
+                "Magnet"
+            ]
 
 
 if __name__ == "__main__":
-    curses.wrapper(test)
+    name = curses.wrapper(test)
+    print(name)
