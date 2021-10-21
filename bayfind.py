@@ -98,17 +98,10 @@ def get_torrents():
     torrents = []
 
     for result in results:
-        torrents.append(
-            {
-                "Name": result["name"],
-                "Size": get_hr_size(result["size"]),
-                "Seeders": result["seeders"],
-                "Leechers": result["leechers"],
-                "Magnet": generate_magnet(result),
-            }
-        )
+        result['magnet'] = generate_magnet(result)
+        result['size'] = get_hr_size(result['size'])
 
-    return torrents
+    return results
 
 
 def make_columns(columns, hl, longest_column_length):
@@ -159,7 +152,7 @@ def test(stdscr):
     for title in headings:
         columns[title] = [d[title] for d in torrents if title in d]
 
-    key_order = ["Name", "Size", "Seeders", "Leechers"]
+    key_order = ["name", "size", "seeders", "leechers"]
     columns = {k: columns[k] for k in key_order}
     longest_column_length = get_longest_column_length(columns)
 
@@ -179,10 +172,9 @@ def test(stdscr):
             if hl > 0:
                 hl -= 1
         elif key == ord("\n"):
-            name = columns["Name"][hl]
-            return next((item for item in torrents if item["Name"] == name), None)[
-                "Magnet"
-            ]
+            first_key = next(iter(columns))
+            first_value = columns[first_key][hl]
+            return next((item for item in torrents if item[first_key] == first_value), None)
 
 
 if __name__ == "__main__":
