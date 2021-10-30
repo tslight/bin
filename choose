@@ -11,17 +11,17 @@ choose() {
     echo
 
     select option in "${options[@]}"; do
-	if [[ "$REPLY" =~ ^[1-9]|[1-9][0-9]+$ &&\
-		  "$REPLY" -le "${#options[@]}" ]]; then
-	    echo
-	    echo "You picked $option ($REPLY)"
-	    echo
-	    break
-	else
-	    echo
-	    echo "$REPLY is invalid."
-	    continue
-	fi
+        if [[ "$REPLY" =~ ^[1-9]|[1-9][0-9]+$ &&\
+                  "$REPLY" -le "${#options[@]}" ]]; then
+            echo
+            echo "You picked $option ($REPLY)"
+            echo
+            break
+        else
+            echo
+            echo "$REPLY is invalid."
+            continue
+        fi
     done
 }
 
