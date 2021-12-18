@@ -34,19 +34,19 @@ func calculate(frontcog, rearcog, wheelsize float64) float64 {
 func main() {
 	fmt.Println(`
 This program calculates gear inches given the number of teeth on the front cog,
-the number of teeth on the rear cog and the wheelsize.
+the number of teeth on the rear cog and the diameter of the wheels in inches.
 
 55" is the typical size for a BMX with either 44/16 or 25/9.
 `)
 
 	frontcog := flag.Float64(
-		"frontcog", 0, "number of teeth on the front sprocket",
+		"frontcog", 0, "Number of teeth on the front sprocket.",
 	)
 	rearcog := flag.Float64(
-		"rearcog", 0, "number of teeth on the rear sprocket",
+		"rearcog", 0, "Number of teeth on the rear sprocket.",
 	)
 	wheelsize := flag.Float64(
-		"wheelsize", 0, "diameter of rear wheel in inches",
+		"wheelsize", 0, "Diameter of wheels in inches.",
 	)
 
 	flag.Parse()
