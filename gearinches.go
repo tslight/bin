@@ -12,23 +12,23 @@ func interactive(prompt string) float64 {
 	return result
 }
 
-func calculate(frontcog, rearcog, wheelsize float64) float64 {
-	if frontcog == 0 {
-		frontcog = interactive("Frontcog")
+func calculate(fc, rc, ws float64) float64 {
+	if fc == 0 {
+		fc = interactive("Frontcog")
 	} else {
-		fmt.Println("Frontcog:", frontcog)
+		fmt.Println("Frontcog:", fc)
 	}
-	if rearcog == 0 {
-		rearcog = interactive("Rearcog")
+	if rc == 0 {
+		rc = interactive("Rearcog")
 	} else {
-		fmt.Println("Rearcog:", rearcog)
+		fmt.Println("Rearcog:", rc)
 	}
-	if wheelsize == 0 {
-		wheelsize = interactive("Wheelsize")
+	if ws == 0 {
+		ws = interactive("Wheelsize")
 	} else {
-		fmt.Println("Wheelsize:", wheelsize)
+		fmt.Println("Wheelsize:", ws)
 	}
-	return frontcog / rearcog * wheelsize
+	return fc / rc * ws
 }
 
 func main() {
@@ -39,19 +39,13 @@ the number of teeth on the rear cog and the diameter of the wheels in inches.
 55" is the typical size for a BMX with either 44/16 or 25/9.
 `)
 
-	frontcog := flag.Float64(
-		"frontcog", 0, "Number of teeth on the front sprocket.",
-	)
-	rearcog := flag.Float64(
-		"rearcog", 0, "Number of teeth on the rear sprocket.",
-	)
-	wheelsize := flag.Float64(
-		"wheelsize", 0, "Diameter of wheels in inches.",
-	)
+	fc := flag.Float64("fc", 0, "Number of teeth on the front sprocket.")
+	rc := flag.Float64("rc", 0, "Number of teeth on the rear sprocket.")
+	ws := flag.Float64("ws", 0, "Diameter of wheels in inches.")
 
 	flag.Parse()
 
-	gearInches := calculate(*frontcog, *rearcog, *wheelsize)
+	gearInches := calculate(*fc, *rc, *ws)
 
 	output := fmt.Sprintf("\nGear inches = %.1f\n", gearInches)
 	fmt.Println(output)
