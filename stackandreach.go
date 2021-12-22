@@ -11,11 +11,11 @@ func deg2Rad(deg float64) float64 {
 }
 
 func getStack(ha, hl, fl, fo, bb float64) float64 {
-	return math.Sin(deg2Rad(ha)) * (hl + fl - fo * math.Cos(deg2Rad(ha))) + bb
+	return math.Sin(deg2Rad(ha))*(hl+fl-fo*math.Cos(deg2Rad(ha))) + bb
 }
 
 func getReach(tt, stack, sa float64) float64 {
-	return tt - stack * math.Tan(deg2Rad(90 - sa))
+	return tt - stack*math.Tan(deg2Rad(90-sa))
 }
 
 func main() {
