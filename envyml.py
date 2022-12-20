@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 import os
 import re
 import yaml
+import json
 
 
 def interpolate_environmental_variables_in_yaml(data):
@@ -49,13 +52,32 @@ def interpolate_environmental_variables_in_yaml(data):
 
 
 data = """
-FOO:
-  foo: ${FOO:foo/bar/baz}
-  bar: 'some arbitrary string'
-  baz: 36
+---
+#
+# Base config
+#
+DBDefaults: &dbdefaults
+  server: ${SQL_SERVER_IP:127.0.0.1}
+  user: apiuser
+  password: F#L@e9Xp
+  provider: mssql+pyodbc
+  driver: ODBC Driver 17 for SQL Server
+
+FlexOpDb:
+  <<: *dbdefaults
+  database: FlexOpDb
+FlexWarehouse:
+  <<: *dbdefaults
+  database: FlexWarehouse
+FlexDemandDb:
+  <<: *dbdefaults
+  database: FlexDemandDB
+FlexForecast:
+  <<: *dbdefaults
+  database: FlexForecast
 """
 
 if __name__ == "__main__":
     # os.environ["FOO"] = "/hello/world"
     p = interpolate_environmental_variables_in_yaml(data)
-    print(p)  ## /home/abc/file.txt
+    print(json.dumps(p, indent=2))  ## /home/abc/file.txt
