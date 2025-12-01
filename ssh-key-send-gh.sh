@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 
-# Check for curl
 if ! command -v curl &> /dev/null; then
     echo "Error: curl is not installed. Please install curl and try again."
     exit 1
 fi
 
-# Check for jq
 if ! command -v jq &> /dev/null; then
     echo "Error: jq is not installed. Please install jq and try again."
     exit 1
 fi
 
-# Prompt for GitHub personal access token
 read -s -p "Enter your GitHub personal access token: " GITHUB_TOKEN
 echo
 
@@ -30,14 +27,10 @@ else
 fi
 
 PUBKEY_PATH="${KEY_PATH}.pub"
-
-# 3. Read the public key
 PUBKEY_CONTENT=$(cat "$PUBKEY_PATH")
 
-# 4. Prompt for key title, default to "Added via script from $HOSTNAME"
 KEY_TITLE="Automated from $USER@$HOSTNAME"
 
-# 5. Prepare and send the API request to GitHub
 JSON_PAYLOAD=$(jq -n \
   --arg title "$KEY_TITLE" \
   --arg key "$PUBKEY_CONTENT" \
@@ -57,7 +50,6 @@ BODY=$(cat /tmp/github_response.txt)
 if [[ "$HTTP_CODE" -eq 201 ]]; then
     echo "SSH key added successfully to your GitHub account."
 else
-    # Check for duplicate key error
     ERROR_MESSAGE=$(jq -r '.errors[].message' /tmp/github_response.txt)
     if [[ "$ERROR_MESSAGE" == "key is already in use" ]]; then
         echo "Looks like you've already added this key to GitHub."
@@ -68,4 +60,4 @@ else
     fi
 fi
 
-# rm /tmp/github_response.txt
+rm -f /tmp/github_response.txt
