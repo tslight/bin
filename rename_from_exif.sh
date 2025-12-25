@@ -11,23 +11,23 @@ $(basename "$0") [-s [SOURCE]] [-i [IMG_DESTINATION]] [-v [VID_DESTINATION]] [-a
 
 while getopts "a:s:i:v:t:h" opt; do
     case $opt in
-        h) usage
-           exit 0
-           ;;
-        s) SOURCE="$OPTARG"
-           ;;
-        i) IMG_DESTINATION="$OPTARG"
-           ;;
-        v) VID_DESTINATION="$OPTARG"
-           ;;
-        a) AUDIO_DESTINATION="$OPTARG"
-           ;;
-        t) TAGS="$OPTARG"
-           ;;
-        \?) echo "${RED}INVALID OPTION -$OPTARG${NC}" >&2
-            usage
-            exit 1
-            ;;
+	h) usage
+	   exit 0
+	   ;;
+	s) SOURCE="$OPTARG"
+	   ;;
+	i) IMG_DESTINATION="$OPTARG"
+	   ;;
+	v) VID_DESTINATION="$OPTARG"
+	   ;;
+	a) AUDIO_DESTINATION="$OPTARG"
+	   ;;
+	t) TAGS="$OPTARG"
+	   ;;
+	\?) echo "${RED}INVALID OPTION -$OPTARG${NC}" >&2
+	    usage
+	    exit 1
+	    ;;
     esac
 done
 
@@ -37,7 +37,7 @@ done
 [ -d "$IMG_DESTINATION" ] || { echo "${RED}$IMG_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
 [ -z "$VID_DESTINATION" ] && VID_DESTINATION="$HOME/Dropbox/Videos"
 [ -d "$VID_DESTINATION" ] || { echo "${RED}$VID_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
-[ -z "$AUDIO_DESTINATION" ] && AUDIO_DESTINATION="$HOME/Dropbox/Music/vn"
+[ -z "$AUDIO_DESTINATION" ] && AUDIO_DESTINATION="$HOME/Dropbox/audio/talk/vn"
 [ -d "$AUDIO_DESTINATION" ] || { echo "${RED}$AUDIO_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
 [ -z "$TAGS" ] && TAGS=("createdate" "datetimeoriginal" "filemodifydate" "modifydate")
 
@@ -65,8 +65,8 @@ COMMON_OPTS="-recurse -extractEmbedded -ignoreMinorErrors"
 
 for tag in "${TAGS[@]}"; do
     if [ -n "$( find "$SOURCE" -prune -empty 2>/dev/null )" ]; then
-        echo "${CYN}$SOURCE is empty. Nothing to do.${NC}"
-        break
+	echo "${CYN}$SOURCE is empty. Nothing to do.${NC}"
+	break
     fi
     echo "${YEL}Renaming all files in $SOURCE to $FILE_FMT using $tag... ${NC}"
     exiftool "-filename<$tag" -dateFormat "$FILE_FMT" -ext "*" $COMMON_OPTS "$SOURCE"
