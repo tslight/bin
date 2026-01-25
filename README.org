@@ -1,0 +1,6 @@
+#+TITLE: In Sterquiliniis Invenitur
+
+Executable trash for my =$PATH=. A.K.A. Random scripts I've written and
+accumulated over the years.
+
+Here be scruffy dragons...
