@@ -31,13 +31,13 @@ while getopts "a:s:i:v:t:h" opt; do
     esac
 done
 
-[ -z "$SOURCE" ] && SOURCE="$HOME/Dropbox/Camera Uploads"
+[ -z "$SOURCE" ] && SOURCE="$HOME/db/Camera Uploads"
 [ -d "$SOURCE" ] || { echo "${RED}$SOURCE doesn't exist. Aborting!${NC}"; exit 1; }
-[ -z "$IMG_DESTINATION" ] && IMG_DESTINATION="$HOME/Dropbox/Pictures"
+[ -z "$IMG_DESTINATION" ] && IMG_DESTINATION="$HOME/db/Pictures"
 [ -d "$IMG_DESTINATION" ] || { echo "${RED}$IMG_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
-[ -z "$VID_DESTINATION" ] && VID_DESTINATION="$HOME/Dropbox/Videos"
+[ -z "$VID_DESTINATION" ] && VID_DESTINATION="$HOME/db/Videos"
 [ -d "$VID_DESTINATION" ] || { echo "${RED}$VID_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
-[ -z "$AUDIO_DESTINATION" ] && AUDIO_DESTINATION="$HOME/Dropbox/audio/talk/vn"
+[ -z "$AUDIO_DESTINATION" ] && AUDIO_DESTINATION="$HOME/db/audio/talk/vn"
 [ -d "$AUDIO_DESTINATION" ] || { echo "${RED}$AUDIO_DESTINATION doesn't exist. Aborting!${NC}"; exit 1; }
 [ -z "$TAGS" ] && TAGS=("createdate" "datetimeoriginal" "filemodifydate" "modifydate")
 
